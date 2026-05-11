@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Team Task Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy: #0B1829;
+  --navy-mid: #152338;
+  --gold: #C8A951;
+  --surface: #F0F3F8;
+  --white: #FFFFFF;
+  --border: #DDE3EC;
+  --text: #1A2535;
+  --muted: #64748B;
+  --r: 8px;
+  --rs: 6px;
+  --shadow: 0 4px 12px rgba(11, 24, 41, 0.04);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--surface); color: var(--text); padding-bottom: 50px; }
+.hdr { background: var(--navy); color: var(--white); padding: 18px 40px; display: flex; justify-content: space-between; align-items: center; }
+.logo { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; color: var(--gold); }
+.logo em { font-style: normal; font-family: 'DM Sans', sans-serif; font-weight: 400; font-size: 14px; color: rgba(255,255,255,.7); letter-spacing: .5px; margin-left: 8px; }
+.hdr-right { display: flex; gap: 10px; }
+.btn { background: var(--gold); color: var(--navy); border: none; padding: 8px 16px; border-radius: var(--rs); font-family: 'DM Sans', sans-serif; font-weight: 600; cursor: pointer; transition: 0.2s; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+.btn:hover { background: #D4BA72; }
+.btn-outline { background: transparent; border: 1px solid rgba(255,255,255,.3); color: var(--white); }
+.btn-outline:hover { background: rgba(255,255,255,.1); }
+
+.container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
+.toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; background: var(--white); padding: 16px 24px; border-radius: var(--r); box-shadow: var(--shadow); }
+.filter-group { display: flex; align-items: center; gap: 12px; }
+.filter-group label { font-weight: 600; font-size: 14px; color: var(--navy); }
+.filter-group select { padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--rs); font-family: 'DM Sans', sans-serif; outline: none; min-width: 200px; }
+
+.task-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; }
+.task-card { background: var(--white); border-radius: var(--r); padding: 20px; box-shadow: var(--shadow); border-top: 3px solid var(--navy-mid); display: flex; flex-direction: column; position: relative; }
+.task-card.completed { border-top-color: #86EFAC; background: #F8FAFC; opacity: 0.8; }
+.task-card.past-due { border-top-color: #EF4444; }
+
+.tc-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+.tc-client { font-size: 16px; font-weight: 700; color: var(--navy); }
+.tc-service { font-size: 12px; color: var(--gold); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.tc-assignee { background: #F1F5F9; color: var(--navy); padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+
+.tc-dates { margin-bottom: 16px; font-size: 13px; color: var(--muted); display: flex; flex-direction: column; gap: 4px; }
+.tc-dates strong { color: var(--text); font-weight: 600; }
+.past-due-text { color: #EF4444; font-weight: 700; }
+
+.tc-checks { background: #F8FAFC; padding: 12px; border-radius: var(--rs); margin-bottom: 16px; font-size: 12px; }
+.tc-checks ul { list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.tc-checks li { display: flex; align-items: center; gap: 6px; }
+
+.tc-notes { font-size: 13px; font-style: italic; color: var(--muted); margin-bottom: 20px; flex-grow: 1; }
+
+.tc-actions { border-top: 1px solid var(--border); padding-top: 16px; display: flex; justify-content: flex-end; }
+.tc-actions select { font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: var(--rs); cursor: pointer; outline: none; border: 1px solid; }
+.tc-actions select.pending { background: #F8FAFC; color: #64748B; border-color: #CBD5E1; }
+.tc-actions select.progress { background: #FFFBEB; color: #D97706; border-color: #FCD34D; }
+.tc-actions select.completed { background: #F0FDF4; color: #166534; border-color: #86EFAC; }
+.task-card.progress { border-top-color: #FCD34D; background: #FFFBEB; }
+
+.empty-state { text-align: center; padding: 60px 20px; color: var(--muted); font-size: 16px; grid-column: 1 / -1; }
+.stats-bar { display:flex; gap:15px; margin-bottom:20px; }
+.stat-box { background:var(--white); padding:10px 16px; border-radius:var(--rs); box-shadow:var(--shadow); display:flex; flex-direction:column; align-items:center; flex:1; border-top:3px solid var(--navy-mid); }
+.stat-box.st-pend { border-top-color:#CBD5E1; }
+.stat-box.st-prog { border-top-color:#FCD34D; }
+.stat-box.st-comp { border-top-color:#86EFAC; }
+.stat-num { font-size:24px; font-weight:700; color:var(--navy); }
+.stat-lbl { font-size:11px; color:var(--muted); text-transform:uppercase; font-weight:600; letter-spacing:0.5px; }
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="logo">DMS<em>/ Team Task Dashboard</em></div>
+  <div class="hdr-right">
+    <a href="DMS_Pitch_Planning_2025 (1).html" class="btn btn-outline">⬅ Back to Planner</a>
+    <button class="btn" onclick="sendReminders()">📨 Send Weekly Reminders</button>
+  </div>
+</header>
+
+<div class="container">
+  <div class="toolbar">
+    <div class="filter-group">
+      <label>Filter by Assignee:</label>
+      <select id="assignee-filter" onchange="renderTasks()">
+        <option value="All">All Tasks</option>
+        <option value="Nayeem">Nayeem</option>
+        <option value="Sharjia">Sharjia</option>
+        <option value="Tutul">Tutul</option>
+        <option value="Unassigned">Unassigned</option>
+      </select>
+    </div>
+    <div style="font-size:13px; color:var(--muted)">
+      Tasks pull automatically from the main Pitch Planner.
+    </div>
+  </div>
+
+  <div class="stats-bar" id="stats-bar">
+    <!-- Stats injected here -->
+  </div>
+
+  <div class="task-grid" id="task-grid">
+    <!-- Tasks injected here -->
+  </div>
+</div>
+
+<script>
+const CLIENTS=[
+  ["Bangladesh Edible Oil ltd.","Advance"],["MM Ispahani","Advance"],
+  ["Brac Dairy & Food Projects","Advance"],["Paragon Agro Limited","Advance"],
+  ["Heidelberg Cement Bangladesh Ltd.","Advance"],["Mariners Group","Advance"],
+  ["Lalteer Seed Ltd","Advance"],["Tradesworth Household Ltd.","Advance"],
+  ["Royal Weaving","Advance"],["Popy Library","Basic"],
+  ["Kitty Industries Ltd","Advance"],["Fair Food & Lifestyle","Advance"],
+  ["Winpower","Basic"],["Chef Food Industries","Basic"],
+  ["Zinix Incorporation","Basic"],["Supreme Ifad Consumers Bangladesh Ltd","Advance"],
+  ["TIFBD","Advance"],["Paragon Feed (Chittagong Feed Limited)","Advance"],
+  ["Rangpur Dairy & Food Products Limited","Advance"],["Romaina","Advance"],
+  ["Olympic Milk Products Ltd","Advance"],["Ahmed Food Products ltd","Basic"],
+  ["Perfume Chemical Industries PLC.","Regular"],["S Haque International","Basic"],
+  ["M. Ahmed Tea & Lands Company Limited","Basic"],["Muazuddin Steel Industries Limited","Basic"],
+  ["Barakh Bites Ltd","Advance"],["Sinopec","Advance"],
+  ["BD Star FOOD & Agro","Advance"],["Celestial Tech","Basic"],
+  ["Monno Medical College & Hospital","Basic"],["Orient Machineries","Basic"],
+  ["Amin Square Limited","Regular"],["DataScape","Advance"],
+  ["Smile Food Products","Advance"],["Paragon CGF","Advance"],
+  ["Paragon Dairy","Advance"],["Linkage International","Advance"],
+  ["Bengal Pipe and Wire Limited","Advance"],["Rahul Group","Advance"],
+  ["Min Max","Advance"],["RB Agro","Advance"],
+  ["Temakaw Fashion Limited","Advance"],["Bir Group","Basic"],
+];
+let pitches = {};
+
+function fmtDate(ds){
+  if(!ds)return'';
+  const d=new Date(ds);
+  return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+}
+
+function loadData() {
+  const pData = localStorage.getItem('DMS_PITCH_DB_2025');
+  if(pData) {
+    pitches = JSON.parse(pData);
+  } else {
+    CLIENTS.forEach((_,i)=>pitches[i]=[]);
+  }
+}
+
+function saveData() {
+  localStorage.setItem('DMS_PITCH_DB_2025', JSON.stringify(pitches));
+}
+
+function changeStatus(ci, pi, val) {
+  pitches[ci][pi].status = val;
+  pitches[ci][pi].isCompleted = (val === 'completed');
+  saveData();
+  renderTasks();
+}
+
+function renderTasks() {
+  const filter = document.getElementById('assignee-filter').value;
+  const grid = document.getElementById('task-grid');
+  const statsBar = document.getElementById('stats-bar');
+  let html = '';
+  let count = 0;
+  
+  let stPend = 0, stProg = 0, stComp = 0;
+  
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  CLIENTS.forEach(([name], ci) => {
+    if(!pitches[ci]) return;
+    
+    pitches[ci].forEach((p, pi) => {
+      const teamName = p.team ? p.team : 'Unassigned';
+      
+      if (filter !== 'All' && filter !== 'Unassigned' && teamName !== filter) return;
+      if (filter === 'Unassigned' && teamName !== 'Unassigned') return;
+      
+      count++;
+      
+      const currStatus = p.status || (p.isCompleted ? 'completed' : 'pending');
+      if(currStatus === 'completed') stComp++;
+      else if(currStatus === 'progress') stProg++;
+      else stPend++;
+      
+      let isPastDue = false;
+      if (currStatus !== 'completed' && p.deadlineRaw) {
+        const dDate = new Date(p.deadlineRaw);
+        if (today >= dDate) isPastDue = true;
+      }
+      
+      let cardState = currStatus;
+      if (currStatus !== 'completed' && isPastDue) cardState = 'past-due';
+      const cardClass = 'task-card ' + cardState;
+      
+      html += `
+        <div class="${cardClass}">
+          <div class="tc-header">
+            <div>
+              <div class="tc-client">${name}</div>
+              <div class="tc-service">${p.service}</div>
+            </div>
+            <div class="tc-assignee">👤 ${teamName}</div>
+          </div>
+          
+          <div class="tc-dates">
+            <div><strong>Pitch Date:</strong> ${p.pitchDate || 'TBD'}</div>
+            <div class="${isPastDue ? 'past-due-text' : ''}"><strong>Prep Deadline:</strong> ${p.deadlineRaw ? fmtDate(p.deadlineRaw) : 'TBD'} ${isPastDue ? ' (Past Due!)' : ''}</div>
+          </div>
+          
+          <div class="tc-checks">
+            <ul>
+              <li>${p.chkDeck ? '✅' : '❌'} Deck</li>
+              <li>${p.chkReq ? '✅' : '❌'} Requirements</li>
+              <li>${p.chkDemo ? '✅' : '❌'} Demo Account</li>
+              <li>${p.chkComp ? '✅' : '❌'} Comp Analysis</li>
+            </ul>
+          </div>
+          
+          ${p.notes ? `<div class="tc-notes">" ${p.notes} "</div>` : '<div class="tc-notes"></div>'}
+          
+          <div class="tc-actions">
+            <select class="${currStatus}" onchange="changeStatus(${ci}, ${pi}, this.value)">
+              <option value="pending" ${currStatus==='pending' ? 'selected' : ''}>⏳ Not Started</option>
+              <option value="progress" ${currStatus==='progress' ? 'selected' : ''}>🚀 In Progress</option>
+              <option value="completed" ${currStatus==='completed' ? 'selected' : ''}>✔ Completed</option>
+            </select>
+          </div>
+        </div>
+      `;
+    });
+  });
+  
+  statsBar.innerHTML = `
+    <div class="stat-box st-pend"><div class="stat-num">${stPend}</div><div class="stat-lbl">Not Started</div></div>
+    <div class="stat-box st-prog"><div class="stat-num">${stProg}</div><div class="stat-lbl">In Progress</div></div>
+    <div class="stat-box st-comp"><div class="stat-num">${stComp}</div><div class="stat-lbl">Completed</div></div>
+  `;
+  
+  if (count === 0) {
+    grid.innerHTML = `<div class="empty-state">No tasks found for the selected filter.</div>`;
+  } else {
+    grid.innerHTML = html;
+  }
+}
+
+function sendReminders() {
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  
+  let summaryText = "Hello Team,\n\nPlease find your pending pitch preparation tasks and approaching deadlines below:\n\n";
+  let hasPending = false;
+  
+  // Group by assignee
+  const tasksByTeam = {
+    'Nayeem': [],
+    'Sharjia': [],
+    'Tutul': []
+  };
+  
+  CLIENTS.forEach(([name], ci) => {
+    if(!pitches[ci]) return;
+    pitches[ci].forEach(p => {
+      if(!p.isCompleted && p.team && tasksByTeam[p.team]) {
+        let isPastDue = false;
+        if (p.deadlineRaw) {
+          const dDate = new Date(p.deadlineRaw);
+          if (today >= dDate) isPastDue = true;
+        }
+        
+        tasksByTeam[p.team].push(`- ${name} (${p.service})\n  Deadline: ${p.deadlineRaw ? fmtDate(p.deadlineRaw) : 'TBD'}${isPastDue ? ' [PAST DUE ⚠️]' : ''}`);
+        hasPending = true;
+      }
+    });
+  });
+  
+  if(!hasPending) {
+    alert("All tasks are completed! No reminders to send.");
+    return;
+  }
+  
+  Object.keys(tasksByTeam).forEach(member => {
+    if(tasksByTeam[member].length > 0) {
+      summaryText += `=== ${member.toUpperCase()} ===\n${tasksByTeam[member].join('\n')}\n\n`;
+    }
+  });
+  
+  summaryText += "Please log into the Pitch Planning system to mark these as complete once finished.\n\nBest regards,\nPitch Planning System";
+  
+  const toEmails = "mahadi.hasannayeem@sokrio.com,sharjia@sokrio.com,sahiuddin@sokrio.com";
+  const subject = "Weekly Reminder: Pending Pitch Preparations";
+  
+  const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(toEmails)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(summaryText)}`;
+  window.open(gmailUrl, '_blank');
+}
+
+// Init
+loadData();
+renderTasks();
+
+// Listen for storage events so it updates if they change it in the other tab
+window.addEventListener('storage', function(e) {
+  if (e.key === 'DMS_PITCH_DB_2025') {
+    loadData();
+    renderTasks();
+  }
+});
+</script>
+
+</body>
+</html>
