@@ -188,6 +188,7 @@ const USER_REGISTRY = {
 let currentUser = null;
 let currentUserEmail = '';
 let isAdmin = false;
+let activityLog = [];
 
 function fmtDate(ds){
   if(!ds)return'';
@@ -218,7 +219,16 @@ function loadData() {
     currentUser = localStorage.getItem('dms_currentUser');
     currentUserEmail = localStorage.getItem('dms_currentUserEmail');
     isAdmin = localStorage.getItem('dms_isAdmin') === '1';
+    
+    const logs = localStorage.getItem('dms_activity_log');
+    if(logs) activityLog = JSON.parse(logs);
   } catch(e){}
+}
+
+function addLog(action) {
+  if (!currentUser) return;
+  activityLog.unshift({ user: currentUser, action: action, time: new Date().toLocaleString() });
+  try { localStorage.setItem('dms_activity_log', JSON.stringify(activityLog.slice(0, 500))); } catch(e){}
 }
 
 function onNameSelect(val) {
@@ -283,8 +293,12 @@ function saveData() {
 }
 
 function changeStatus(ci, pi, val) {
-  pitches[ci][pi].status = val;
-  pitches[ci][pi].isCompleted = (val === 'completed');
+  const p = pitches[ci][pi];
+  const clientName = CLIENTS[ci] ? CLIENTS[ci][0] : 'Unknown';
+  addLog(`Changed status of "${clientName} — ${p.service}" to "${val}"`);
+  
+  p.status = val;
+  p.isCompleted = (val === 'completed');
   saveData();
   renderTasks();
 }

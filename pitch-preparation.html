@@ -426,7 +426,7 @@ function loadData() {
   try {
     const s = localStorage.getItem('dms_pitch_prep_2025');
     if (s) prepData = JSON.parse(s);
-    const logs = localStorage.getItem('dms_pitch_logs_2025');
+    const logs = localStorage.getItem('dms_activity_log');
     if (logs) logData = JSON.parse(logs);
     
     const user = localStorage.getItem('dms_currentUser');
@@ -441,7 +441,7 @@ function loadData() {
 function persistData() {
   try {
     localStorage.setItem('dms_pitch_prep_2025', JSON.stringify(prepData));
-    localStorage.setItem('dms_pitch_logs_2025', JSON.stringify(logData));
+    localStorage.setItem('dms_activity_log', JSON.stringify(logData.slice(0, 500)));
     if (currentUser) {
       localStorage.setItem('dms_currentUser', currentUser);
       localStorage.setItem('dms_currentUserEmail', currentUserEmail);

@@ -394,6 +394,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--text
       🔔 Alerts <span class="badge-red" id="alert-count" style="display:none">0</span>
       <div class="alerts-dropdown" id="alerts-drop"></div>
     </div>
+    <button class="btn-save" onclick="openMigration()">📦 Migrate</button>
     <button class="btn-save" onclick="saveData()">💾 Save Progress</button>
     <button class="btn-print" onclick="window.print()">🖨 Print / PDF</button>
   </div>
@@ -602,10 +603,22 @@ body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--text
       <h3>🔔 Your Pending Tasks</h3>
       <button class="btn-close" style="color:rgba(255,255,255,.6);font-size:22px" onclick="closeMyAlert()">&times;</button>
     </div>
-    <div class="my-alert-body" id="my-alert-list"></div>
-    <div class="my-alert-footer">
-      <button class="btn-save" style="background:rgba(0,0,0,0.06);color:var(--navy);border:1px solid var(--border)" onclick="closeMyAlert()">Dismiss</button>
-      <button class="btn-go-tasks" onclick="closeMyAlert();switchTab('tasks',document.querySelectorAll('.tabs button')[1])">📂 Go to My Tasks</button>
+<!-- ════ DATA MIGRATION MODAL ════ -->
+<div class="modal-overlay" id="migration-modal" onclick="if(event.target===this)closeMigration()">
+  <div class="modal-box" style="max-width:500px">
+    <div class="modal-hdr">
+      <h3>💾 Data Migration Tool</h3>
+      <button class="btn-close" onclick="closeMigration()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:var(--muted);margin-bottom:15px">Use this to move your data between your local file and the Vercel website.</p>
+      <label style="font-size:11px;font-weight:700;text-transform:uppercase">Backup/Export Data (Copy this):</label>
+      <textarea id="export-area" readonly style="width:100%;height:80px;font-family:monospace;font-size:10px;padding:10px;margin-bottom:15px;background:var(--surface);border:1px solid var(--border);border-radius:4px" onclick="this.select()"></textarea>
+      
+      <label style="font-size:11px;font-weight:700;text-transform:uppercase">Restore/Import Data (Paste here):</label>
+      <textarea id="import-area" placeholder='Paste your backup JSON here...' style="width:100%;height:80px;font-family:monospace;font-size:10px;padding:10px;margin-bottom:15px;background:var(--white);border:1.5px solid var(--border);border-radius:4px"></textarea>
+      
+      <button class="btn-login" onclick="importData()" style="background:var(--advance)">Apply / Import Data</button>
     </div>
   </div>
 </div>
@@ -785,7 +798,6 @@ function loadData(){
 
     if(s && s.length > 2){
       let data = JSON.parse(s);
-      // Ensure it's an array for consistency
       if(!Array.isArray(data)) {
         const arr = [];
         CLIENTS.forEach((_, i) => arr.push(data[i] || []));
@@ -804,6 +816,30 @@ function loadData(){
     const adminFlag=localStorage.getItem('dms_isAdmin');
     if(adminFlag) isAdmin=(adminFlag==='1');
   }catch(e){ console.error("Load Error:", e); }
+}
+
+function openMigration() {
+  document.getElementById('export-area').value = JSON.stringify(pitches);
+  document.getElementById('migration-modal').classList.add('show');
+}
+function closeMigration() { document.getElementById('migration-modal').classList.remove('show'); }
+function importData() {
+  const raw = document.getElementById('import-area').value.trim();
+  if(!raw) return;
+  try {
+    const data = JSON.parse(raw);
+    if(Array.isArray(data)) {
+      pitches = data;
+      while(pitches.length < CLIENTS.length) pitches.push([]);
+      saveData();
+      renderPlanning();
+      addLog('Imported data backup');
+      alert('Data imported successfully!');
+      closeMigration();
+    } else {
+      alert('Invalid data format. Please paste a valid JSON array.');
+    }
+  } catch(e) { alert('Import failed: ' + e.message); }
 }
 function saveData(){
   try{
