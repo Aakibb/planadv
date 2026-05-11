@@ -403,7 +403,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--text
   <button class="tab on" onclick="switchTab('planning',this)">📋 Client Planning</button>
   <button class="tab" onclick="switchTab('tasks',this)">👥 Team Tasks</button>
   <button class="tab" onclick="switchTab('calendar',this)">📅 Monthly Calendar</button>
-  <button class="tab" onclick="switchTab('summary',this)">📈 Summary</button>
+  <button id="summary-tab-btn" class="tab" onclick="switchTab('summary',this)" style="display:none">📈 Summary</button>
 </nav>
 
 <!-- ════ PLANNING ════ -->
@@ -720,6 +720,12 @@ function loginUser(e) {
   document.getElementById('login-modal').classList.remove('show');
   document.getElementById('logged-user-name').textContent = currentUser + (isAdmin ? ' 👑' : '');
   document.getElementById('user-display').style.display = 'flex';
+  
+  // Show summary tab for admins
+  const isManager = isAdmin || (currentUser && currentUser.toLowerCase() === 'tutul');
+  const sumTab = document.getElementById('summary-tab-btn');
+  if (sumTab) sumTab.style.display = isManager ? 'block' : 'none';
+
   showToast('Welcome back, ' + currentUser + (isAdmin ? ' (Admin)' : '') + '!');
   setTimeout(() => checkUserAlerts(true), 800);
 }
@@ -732,6 +738,9 @@ function logoutUser() {
     localStorage.removeItem('dms_isAdmin');
   } catch(ex){}
   document.getElementById('user-display').style.display = 'none';
+  const sumTab = document.getElementById('summary-tab-btn');
+  if (sumTab) sumTab.style.display = 'none';
+  
   document.getElementById('login-name').value = '';
   document.getElementById('login-email').value = '';
   document.getElementById('login-error').style.display = 'none';
@@ -1861,6 +1870,11 @@ setInterval(saveData,60000);
 if (currentUser) {
   document.getElementById('logged-user-name').textContent = currentUser + (isAdmin ? ' 👑' : '');
   document.getElementById('user-display').style.display = 'flex';
+  
+  const isManager = isAdmin || (currentUser && currentUser.toLowerCase() === 'tutul');
+  const sumTab = document.getElementById('summary-tab-btn');
+  if (sumTab) sumTab.style.display = isManager ? 'block' : 'none';
+
   setTimeout(() => checkUserAlerts(true), 900);
 } else {
   document.getElementById('login-modal').classList.add('show');

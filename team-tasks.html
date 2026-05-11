@@ -71,6 +71,17 @@ body { font-family: 'DM Sans', sans-serif; background: var(--surface); color: va
 .stat-box.st-comp { border-top-color:#86EFAC; }
 .stat-num { font-size:24px; font-weight:700; color:var(--navy); }
 .stat-lbl { font-size:11px; color:var(--muted); text-transform:uppercase; font-weight:600; letter-spacing:0.5px; }
+
+/* Modal & Login */
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(11,24,41,.6); backdrop-filter: blur(4px); z-index: 1000; display: none; align-items: center; justify-content: center; }
+.modal-overlay.show { display: flex; }
+.login-box { background: var(--white); border-radius: var(--r); width: 90%; max-width: 440px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.35); }
+.login-hdr { background: var(--navy); padding: 28px; text-align: center; color: var(--gold); }
+.login-hdr h2 { font-family: 'Playfair Display', serif; }
+.login-body { padding: 28px; }
+.login-body label { display: block; font-size: 11px; font-weight: 700; color: var(--navy); text-transform: uppercase; margin-bottom: 6px; }
+.login-body select, .login-body input { width: 100%; padding: 11px 14px; border: 1.5px solid var(--border); border-radius: var(--rs); font-family: 'DM Sans', sans-serif; margin-bottom: 16px; outline: none; }
+.btn-login { width: 100%; background: var(--navy); color: #fff; border: none; border-radius: var(--rs); padding: 13px; font-family: 'DM Sans', sans-serif; font-weight: 700; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -78,8 +89,12 @@ body { font-family: 'DM Sans', sans-serif; background: var(--surface); color: va
 <header class="hdr">
   <div class="logo">DMS<em>/ Team Task Dashboard</em></div>
   <div class="hdr-right">
-    <a href="DMS_Pitch_Planning_2025 (1).html" class="btn btn-outline">⬅ Back to Planner</a>
-    <button class="btn" onclick="sendReminders()">📨 Send Weekly Reminders</button>
+    <div id="user-display" style="display:none; align-items:center; gap:10px; margin-right:15px; font-size:13px; color:var(--gold)">
+      <span>👤 <strong id="logged-user-name" style="color:#fff"></strong></span>
+      <button onclick="logoutUser()" style="background:none; border:1px solid rgba(255,255,255,0.3); color:#fff; font-size:10px; padding:3px 7px; border-radius:4px; cursor:pointer">Logout</button>
+    </div>
+    <a href="index.html" class="btn btn-outline">⬅ Back to Planner</a>
+    <button id="reminder-btn" class="btn" onclick="sendReminders()" style="display:none">📨 Send Weekly Reminders</button>
   </div>
 </header>
 
@@ -106,6 +121,32 @@ body { font-family: 'DM Sans', sans-serif; background: var(--surface); color: va
 
   <div class="task-grid" id="task-grid">
     <!-- Tasks injected here -->
+  </div>
+</div>
+
+<!-- Login Modal -->
+<div class="modal-overlay" id="login-modal">
+  <div class="login-box">
+    <div class="login-hdr">
+      <h2>DMS</h2>
+      <p style="color:rgba(255,255,255,0.6); font-size:12px; margin-top:5px">Team Task Dashboard — Please sign in</p>
+    </div>
+    <form class="login-body" onsubmit="loginUser(event)">
+      <label>Select Your Name</label>
+      <select id="login-name" required onchange="onNameSelect(this.value)">
+        <option value="">— Choose your name —</option>
+        <option value="Akib">Akib (Admin)</option>
+        <option value="Nayeem">Nayeem</option>
+        <option value="Sharjia">Sharjia</option>
+        <option value="Tutul">Tutul</option>
+      </select>
+      <label>Enter Your Email</label>
+      <input type="email" id="login-email" required placeholder="your email@sokrio.com">
+      <div id="login-error" style="display:none; color:#EF4444; font-size:12px; font-weight:600; margin-bottom:10px">
+        ❌ Email mismatch.
+      </div>
+      <button type="submit" class="btn-login">Enter Dashboard →</button>
+    </form>
   </div>
 </div>
 
@@ -136,6 +177,18 @@ const CLIENTS=[
 ];
 let pitches = {};
 
+// ── USER REGISTRY ──
+const USER_REGISTRY = {
+  'akib':    { email: 'akib@sokrio.com',                    role: 'admin',  display: 'Akib' },
+  'nayeem':  { email: 'mahadi.hasannayeem@sokrio.com',      role: 'member', display: 'Nayeem' },
+  'sharjia': { email: 'sharjia@sokrio.com',                 role: 'member', display: 'Sharjia' },
+  'tutul':   { email: 'sahiuddin@sokrio.com',               role: 'admin',  display: 'Tutul' }
+};
+
+let currentUser = null;
+let currentUserEmail = '';
+let isAdmin = false;
+
 function fmtDate(ds){
   if(!ds)return'';
   const d=new Date(ds);
@@ -143,16 +196,85 @@ function fmtDate(ds){
 }
 
 function loadData() {
-  const pData = localStorage.getItem('DMS_PITCH_DB_2025');
+  const pData = localStorage.getItem('dms_pitches_2025'); // Use same key as main app
   if(pData) {
-    pitches = JSON.parse(pData);
+    const list = JSON.parse(pData);
+    pitches = {};
+    list.forEach((pArr, i) => { pitches[i] = pArr; });
   } else {
     CLIENTS.forEach((_,i)=>pitches[i]=[]);
+  }
+
+  // Load User
+  try {
+    currentUser = localStorage.getItem('dms_currentUser');
+    currentUserEmail = localStorage.getItem('dms_currentUserEmail');
+    isAdmin = localStorage.getItem('dms_isAdmin') === '1';
+  } catch(e){}
+}
+
+function onNameSelect(val) {
+  const input = document.getElementById('login-email');
+  if (val && USER_REGISTRY[val.toLowerCase()]) {
+    input.placeholder = USER_REGISTRY[val.toLowerCase()].email;
+  }
+}
+
+function loginUser(e) {
+  e.preventDefault();
+  const nameVal = document.getElementById('login-name').value.trim();
+  const emailVal = document.getElementById('login-email').value.trim().toLowerCase();
+  const userKey = nameVal.toLowerCase();
+  const userRecord = USER_REGISTRY[userKey];
+
+  if (!userRecord || userRecord.email.toLowerCase() !== emailVal) {
+    document.getElementById('login-error').style.display = 'block';
+    return;
+  }
+
+  currentUser = userRecord.display;
+  currentUserEmail = userRecord.email;
+  isAdmin = (userRecord.role === 'admin');
+
+  try {
+    localStorage.setItem('dms_currentUser', currentUser);
+    localStorage.setItem('dms_currentUserEmail', currentUserEmail);
+    localStorage.setItem('dms_isAdmin', isAdmin ? '1' : '0');
+  } catch(e){}
+
+  document.getElementById('login-modal').classList.remove('show');
+  updateUserUI();
+  renderTasks();
+}
+
+function logoutUser() {
+  currentUser = null;
+  try {
+    localStorage.removeItem('dms_currentUser');
+    localStorage.removeItem('dms_currentUserEmail');
+    localStorage.removeItem('dms_isAdmin');
+  } catch(e){}
+  location.reload();
+}
+
+function updateUserUI() {
+  if (currentUser) {
+    document.getElementById('user-display').style.display = 'flex';
+    document.getElementById('logged-user-name').textContent = currentUser + (isAdmin ? ' 👑' : '');
+    
+    const isManager = isAdmin || (currentUser && currentUser.toLowerCase() === 'tutul');
+    document.getElementById('reminder-btn').style.display = isAdmin ? 'inline-flex' : 'none';
+    document.querySelector('.toolbar').style.display = isManager ? 'flex' : 'none';
+  } else {
+    document.getElementById('login-modal').classList.add('show');
   }
 }
 
 function saveData() {
-  localStorage.setItem('DMS_PITCH_DB_2025', JSON.stringify(pitches));
+  // Convert pitches object back to array for compatibility
+  const list = [];
+  CLIENTS.forEach((_, i) => list.push(pitches[i] || []));
+  localStorage.setItem('dms_pitches_2025', JSON.stringify(list));
 }
 
 function changeStatus(ci, pi, val) {
@@ -163,7 +285,11 @@ function changeStatus(ci, pi, val) {
 }
 
 function renderTasks() {
-  const filter = document.getElementById('assignee-filter').value;
+  if (!currentUser) return;
+  const isManager = isAdmin || (currentUser && currentUser.toLowerCase() === 'tutul');
+  let filter = document.getElementById('assignee-filter').value;
+  if (!isManager) filter = currentUser;
+
   const grid = document.getElementById('task-grid');
   const statsBar = document.getElementById('stats-bar');
   let html = '';
@@ -303,6 +429,7 @@ function sendReminders() {
 
 // Init
 loadData();
+updateUserUI();
 renderTasks();
 
 // Listen for storage events so it updates if they change it in the other tab

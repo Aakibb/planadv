@@ -283,21 +283,34 @@ body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--text
 
 <!-- Login Modal -->
 <div class="modal-overlay" id="login-modal">
-  <div class="modal">
-    <div class="modal-header">
-      <h3>Welcome to Pitch Preparation</h3>
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header" style="background:linear-gradient(120deg,var(--navy) 0%,var(--navy-light) 100%);color:#fff">
+      <h3 style="color:var(--gold-light)">Welcome to Pitch Preparation</h3>
     </div>
-    <form onsubmit="loginUser(event)">
-      <div class="modal-body">
-        <p class="ps" style="margin-bottom:16px;">Please enter your name to access the dashboard. This helps track who made changes.</p>
-        <div class="ff">
-          <label>Your Full Name</label>
-          <input type="text" id="login-name" required placeholder="e.g. Jane Doe">
-        </div>
+    <form onsubmit="loginUser(event)" style="padding:28px">
+      <p class="ps" style="margin-bottom:18px;">Please sign in to access the preparation log.</p>
+      
+      <div class="ff">
+        <label>Select Your Name</label>
+        <select id="login-name" required onchange="onNameSelect(this.value)" style="width:100%;margin-bottom:16px">
+          <option value="">— Choose your name —</option>
+          <option value="Akib">Akib (Admin)</option>
+          <option value="Nayeem">Nayeem</option>
+          <option value="Sharjia">Sharjia</option>
+          <option value="Tutul">Tutul</option>
+        </select>
       </div>
-      <div class="modal-footer">
-        <button type="submit" class="btn-primary">Enter Dashboard</button>
+
+      <div class="ff">
+        <label>Enter Your Email</label>
+        <input type="email" id="login-email" required placeholder="your email@sokrio.com">
       </div>
+
+      <div id="login-error" style="display:none;margin-top:10px;padding:9px 12px;background:#FEE2E2;border:1px solid #FECACA;border-radius:var(--rs);font-size:12.5px;color:#B91C1C;font-weight:600;">
+        ❌ Email does not match.
+      </div>
+
+      <button type="submit" class="btn-primary" style="width:100%;margin-top:20px">Enter Dashboard →</button>
     </form>
   </div>
 </div>
@@ -350,9 +363,19 @@ const CLIENTS=[
 
 const SVCS=["Advance Analytics","Map Services","Dashboard Services","Retail Benchmark Solution","Package Upgrade"];
 
+// ── USER REGISTRY ──
+const USER_REGISTRY = {
+  'akib':    { email: 'akib@sokrio.com',                    role: 'admin',  display: 'Akib' },
+  'nayeem':  { email: 'mahadi.hasannayeem@sokrio.com',      role: 'member', display: 'Nayeem' },
+  'sharjia': { email: 'sharjia@sokrio.com',                 role: 'member', display: 'Sharjia' },
+  'tutul':   { email: 'sahiuddin@sokrio.com',               role: 'admin',  display: 'Tutul' }
+};
+
 let prepData = [];
 let logData = [];
 let currentUser = null;
+let currentUserEmail = '';
+let isAdmin = false;
 
 let currentFilterClient = null;
 let currentFilterService = null;
@@ -405,8 +428,13 @@ function loadData() {
     if (s) prepData = JSON.parse(s);
     const logs = localStorage.getItem('dms_pitch_logs_2025');
     if (logs) logData = JSON.parse(logs);
+    
     const user = localStorage.getItem('dms_currentUser');
     if (user) currentUser = user;
+    const email = localStorage.getItem('dms_currentUserEmail');
+    if (email) currentUserEmail = email;
+    const adminFlag = localStorage.getItem('dms_isAdmin');
+    if (adminFlag) isAdmin = (adminFlag === '1');
   } catch(e) {}
 }
 
@@ -416,36 +444,71 @@ function persistData() {
     localStorage.setItem('dms_pitch_logs_2025', JSON.stringify(logData));
     if (currentUser) {
       localStorage.setItem('dms_currentUser', currentUser);
+      localStorage.setItem('dms_currentUserEmail', currentUserEmail);
+      localStorage.setItem('dms_isAdmin', isAdmin ? '1' : '0');
     } else {
       localStorage.removeItem('dms_currentUser');
+      localStorage.removeItem('dms_currentUserEmail');
+      localStorage.removeItem('dms_isAdmin');
     }
   } catch(e) {}
 }
 
+function onNameSelect(val) {
+  const emailInput = document.getElementById('login-email');
+  if (val && USER_REGISTRY[val.toLowerCase()]) {
+    emailInput.placeholder = USER_REGISTRY[val.toLowerCase()].email;
+  } else {
+    emailInput.placeholder = 'your email@sokrio.com';
+  }
+}
+
 function loginUser(e) {
   e.preventDefault();
-  const name = document.getElementById('login-name').value.trim();
-  if (!name) return;
-  currentUser = name;
+  const nameVal = document.getElementById('login-name').value.trim();
+  const emailVal = document.getElementById('login-email').value.trim().toLowerCase();
+  const errBox = document.getElementById('login-error');
+
+  if (!nameVal) return;
+  const userKey = nameVal.toLowerCase();
+  const userRecord = USER_REGISTRY[userKey];
+
+  if (!userRecord || userRecord.email.toLowerCase() !== emailVal) {
+    errBox.style.display = 'block';
+    return;
+  }
+
+  errBox.style.display = 'none';
+  currentUser = userRecord.display;
+  currentUserEmail = userRecord.email;
+  isAdmin = (userRecord.role === 'admin');
+
   persistData();
   document.getElementById('login-modal').classList.remove('on');
   updateUserUI();
   renderList();
-  showToast('Welcome, ' + currentUser);
+  showToast('Welcome, ' + currentUser + (isAdmin ? ' (Admin)' : ''));
 }
 
 function logoutUser() {
-  currentUser = null;
+  currentUser = null; currentUserEmail = ''; isAdmin = false;
   persistData();
   document.getElementById('user-display').style.display = 'none';
   document.getElementById('saved-list').innerHTML = ''; // Hide data
   document.getElementById('login-name').value = '';
+  document.getElementById('login-email').value = '';
   document.getElementById('login-modal').classList.add('on');
 }
 
 function updateUserUI() {
-  document.getElementById('logged-user-name').textContent = currentUser;
+  document.getElementById('logged-user-name').textContent = currentUser + (isAdmin ? ' 👑' : '');
   document.getElementById('user-display').style.display = 'flex';
+  
+  // Set default assignee name/email if logged in as a member
+  if (!isAdmin && currentUser) {
+    document.getElementById('f-team').value = currentUser;
+    document.getElementById('f-email').value = currentUserEmail;
+  }
 }
 
 function addLog(actionText) {
@@ -534,9 +597,18 @@ function saveEntry(e) {
 }
 
 function deleteEntry(id) {
-  if(!confirm('Are you sure you want to delete this entry?')) return;
   const pToDel = prepData.find(p => p.id === id);
-  if(pToDel) addLog('Deleted preparation entry for ' + pToDel.client);
+  if (!pToDel) return;
+
+  // RBAC for deletion: Admin or the person who created it
+  const isOwner = (currentUser && pToDel.team && pToDel.team.toLowerCase() === currentUser.toLowerCase());
+  if (!isAdmin && !isOwner) {
+    alert('Permission Denied: You can only delete your own entries.');
+    return;
+  }
+
+  if(!confirm('Are you sure you want to delete this entry?')) return;
+  addLog('Deleted preparation entry for ' + pToDel.client);
   
   prepData = prepData.filter(p => p.id !== id);
   persistData();
@@ -548,6 +620,12 @@ function renderList() {
   const list = document.getElementById('saved-list');
   
   let displayData = prepData;
+
+  // RBAC for visibility: Admins see all, members see only their own
+  if (!isAdmin && currentUser) {
+    displayData = displayData.filter(p => p.team && p.team.toLowerCase() === currentUser.toLowerCase());
+  }
+
   if (currentFilterClient) displayData = displayData.filter(p => p.client === currentFilterClient);
   if (currentFilterService) displayData = displayData.filter(p => p.service === currentFilterService);
 
