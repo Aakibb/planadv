@@ -779,13 +779,18 @@ function closeHistory() {
 
 function loadData(){
   try{
-    // Revert to original key: DMS_PITCH_DB_2025
-    let s = localStorage.getItem('DMS_PITCH_DB_2025');
-    // Migration: if new key has data but old one doesn't (rare), or if they both have data, we'll try to use the old one as primary.
-    const sNew = localStorage.getItem('dms_pitches_2025');
-    if (!s && sNew) s = sNew; 
+    // Check both potential keys used in various versions
+    const s1 = localStorage.getItem('DMS_PITCH_DB_2025') || '';
+    const s2 = localStorage.getItem('dms_pitches_2025') || '';
+    
+    // Use the one that has more content (likely the one with actual data)
+    let s = (s1.length >= s2.length) ? s1 : s2;
 
-    if(s){pitches=JSON.parse(s);while(pitches.length<CLIENTS.length)pitches.push([]);}
+    if(s && s.length > 2){
+      pitches=JSON.parse(s);
+      while(pitches.length<CLIENTS.length)pitches.push([]);
+    }
+    
     const logs=localStorage.getItem('dms_activity_log');
     if(logs) activityLog=JSON.parse(logs);
     const user=localStorage.getItem('dms_currentUser');
@@ -794,7 +799,7 @@ function loadData(){
     if(uemail) currentUserEmail=uemail;
     const adminFlag=localStorage.getItem('dms_isAdmin');
     if(adminFlag) isAdmin=(adminFlag==='1');
-  }catch(e){}
+  }catch(e){ console.error("Load Error:", e); }
 }
 function saveData(){
   try{

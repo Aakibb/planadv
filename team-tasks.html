@@ -196,10 +196,13 @@ function fmtDate(ds){
 }
 
 function loadData() {
-  let pData = localStorage.getItem('DMS_PITCH_DB_2025'); // Revert to original key
-  if(!pData) pData = localStorage.getItem('dms_pitches_2025'); // Migration check
+  const s1 = localStorage.getItem('DMS_PITCH_DB_2025') || '';
+  const s2 = localStorage.getItem('dms_pitches_2025') || '';
+  
+  // Pick the one with more content
+  const pData = (s1.length >= s2.length) ? s1 : s2;
 
-  if(pData) {
+  if(pData && pData.length > 2) {
     const list = JSON.parse(pData);
     pitches = {};
     list.forEach((pArr, i) => { pitches[i] = pArr; });
