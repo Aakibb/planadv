@@ -779,16 +779,20 @@ function closeHistory() {
 
 function loadData(){
   try{
-    // Check both potential keys used in various versions
     const s1 = localStorage.getItem('DMS_PITCH_DB_2025') || '';
     const s2 = localStorage.getItem('dms_pitches_2025') || '';
-    
-    // Use the one that has more content (likely the one with actual data)
     let s = (s1.length >= s2.length) ? s1 : s2;
 
     if(s && s.length > 2){
-      pitches=JSON.parse(s);
-      while(pitches.length<CLIENTS.length)pitches.push([]);
+      let data = JSON.parse(s);
+      // Ensure it's an array for consistency
+      if(!Array.isArray(data)) {
+        const arr = [];
+        CLIENTS.forEach((_, i) => arr.push(data[i] || []));
+        data = arr;
+      }
+      pitches = data;
+      while(pitches.length < CLIENTS.length) pitches.push([]);
     }
     
     const logs=localStorage.getItem('dms_activity_log');

@@ -198,17 +198,20 @@ function fmtDate(ds){
 function loadData() {
   const s1 = localStorage.getItem('DMS_PITCH_DB_2025') || '';
   const s2 = localStorage.getItem('dms_pitches_2025') || '';
-  
-  // Pick the one with more content
   const pData = (s1.length >= s2.length) ? s1 : s2;
 
   if(pData && pData.length > 2) {
-    const list = JSON.parse(pData);
-    pitches = {};
-    list.forEach((pArr, i) => { pitches[i] = pArr; });
+    let data = JSON.parse(pData);
+    if(!Array.isArray(data)) {
+      const arr = [];
+      CLIENTS.forEach((_, i) => arr.push(data[i] || []));
+      data = arr;
+    }
+    pitches = data;
   } else {
-    CLIENTS.forEach((_,i)=>pitches[i]=[]);
+    pitches = CLIENTS.map(() => []);
   }
+}
 
   // Load User
   try {
@@ -276,10 +279,7 @@ function updateUserUI() {
 }
 
 function saveData() {
-  // Convert pitches object back to array for compatibility
-  const list = [];
-  CLIENTS.forEach((_, i) => list.push(pitches[i] || []));
-  localStorage.setItem('DMS_PITCH_DB_2025', JSON.stringify(list));
+  localStorage.setItem('DMS_PITCH_DB_2025', JSON.stringify(pitches));
 }
 
 function changeStatus(ci, pi, val) {
