@@ -600,9 +600,12 @@ function deleteEntry(id) {
   const pToDel = prepData.find(p => p.id === id);
   if (!pToDel) return;
 
-  // RBAC for deletion: Admin or the person who created it
+  const isManager = isAdmin || (currentUser && currentUser.toLowerCase() === 'tutul');
+
+  // RBAC for deletion: Manager or the person who created it
   const isOwner = (currentUser && pToDel.team && pToDel.team.toLowerCase() === currentUser.toLowerCase());
-  if (!isAdmin && !isOwner) {
+  
+  if (!isManager && !isOwner) {
     alert('Permission Denied: You can only delete your own entries.');
     return;
   }

@@ -196,7 +196,9 @@ function fmtDate(ds){
 }
 
 function loadData() {
-  const pData = localStorage.getItem('dms_pitches_2025'); // Use same key as main app
+  let pData = localStorage.getItem('DMS_PITCH_DB_2025'); // Revert to original key
+  if(!pData) pData = localStorage.getItem('dms_pitches_2025'); // Migration check
+
   if(pData) {
     const list = JSON.parse(pData);
     pitches = {};
@@ -274,7 +276,7 @@ function saveData() {
   // Convert pitches object back to array for compatibility
   const list = [];
   CLIENTS.forEach((_, i) => list.push(pitches[i] || []));
-  localStorage.setItem('dms_pitches_2025', JSON.stringify(list));
+  localStorage.setItem('DMS_PITCH_DB_2025', JSON.stringify(list));
 }
 
 function changeStatus(ci, pi, val) {

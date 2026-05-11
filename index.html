@@ -774,7 +774,12 @@ function closeHistory() {
 
 function loadData(){
   try{
-    const s=localStorage.getItem('dms_pitches_2025');
+    // Revert to original key: DMS_PITCH_DB_2025
+    let s = localStorage.getItem('DMS_PITCH_DB_2025');
+    // Migration: if new key has data but old one doesn't (rare), or if they both have data, we'll try to use the old one as primary.
+    const sNew = localStorage.getItem('dms_pitches_2025');
+    if (!s && sNew) s = sNew; 
+
     if(s){pitches=JSON.parse(s);while(pitches.length<CLIENTS.length)pitches.push([]);}
     const logs=localStorage.getItem('dms_activity_log');
     if(logs) activityLog=JSON.parse(logs);
@@ -787,7 +792,10 @@ function loadData(){
   }catch(e){}
 }
 function saveData(){
-  try{localStorage.setItem('dms_pitches_2025',JSON.stringify(pitches));showToast('Progress saved!');}
+  try{
+    localStorage.setItem('DMS_PITCH_DB_2025',JSON.stringify(pitches));
+    showToast('Progress saved!');
+  }
   catch(e){showToast('Save failed — try Print to PDF.');}
 }
 function showToast(msg){
@@ -1115,9 +1123,20 @@ function addPitch(ci){
   }
 }
 function rmPitch(ci,pi){
+  const isManager = isAdmin || (currentUser && currentUser.toLowerCase() === 'tutul');
+  
+  // RBAC for deletion
+  const p = pitches[ci][pi];
+  const isOwner = (currentUser && p && p.team && p.team.toLowerCase() === currentUser.toLowerCase());
+  
+  if (!isManager && !isOwner) {
+    alert('Permission Denied: You can only delete your own assigned pitches.');
+    return;
+  }
+
   if(!confirm('Remove this pitch entry?'))return;
   const clientName = CLIENTS[ci][0];
-  const svc = pitches[ci][pi] ? pitches[ci][pi].service : '';
+  const svc = p ? p.service : '';
   addLog(`Deleted pitch entry for "${clientName} — ${svc}"`);
   pitches[ci].splice(pi,1);
   saveData();renderPlanning();
