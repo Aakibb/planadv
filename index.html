@@ -722,10 +722,15 @@ function loginUser(e) {
   document.getElementById('logged-user-name').textContent = currentUser + (isAdmin ? ' 👑' : '');
   document.getElementById('user-display').style.display = 'flex';
   
-  // Show summary tab for admins
+  // Show/Hide summary tab
   const isManager = isAdmin || (currentUser && currentUser.toLowerCase() === 'tutul');
   const sumTab = document.getElementById('summary-tab-btn');
   if (sumTab) sumTab.style.display = isManager ? 'block' : 'none';
+
+  // Refresh UI
+  renderPlanning();
+  renderTasks();
+  renderSummary();
 
   showToast('Welcome back, ' + currentUser + (isAdmin ? ' (Admin)' : '') + '!');
   setTimeout(() => checkUserAlerts(true), 800);
