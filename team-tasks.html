@@ -305,8 +305,12 @@ function renderTasks() {
     
     pitches[ci].forEach((p, pi) => {
       const teamName = p.team ? p.team : 'Unassigned';
+      const tLower = teamName.toLowerCase();
+      const fLower = filter.toLowerCase();
       
-      if (filter !== 'All' && filter !== 'Unassigned' && teamName !== filter) return;
+      if (filter !== 'All' && filter !== 'Unassigned') {
+        if (tLower !== fLower) return;
+      }
       if (filter === 'Unassigned' && teamName !== 'Unassigned') return;
       
       count++;
@@ -394,14 +398,18 @@ function sendReminders() {
   CLIENTS.forEach(([name], ci) => {
     if(!pitches[ci]) return;
     pitches[ci].forEach(p => {
-      if(!p.isCompleted && p.team && tasksByTeam[p.team]) {
+      const currStatus = p.status || 'pending';
+      const teamName = p.team || 'Unassigned';
+      const tKey = teamName.charAt(0).toUpperCase() + teamName.slice(1).toLowerCase();
+
+      if(currStatus !== 'completed' && teamName !== 'Unassigned' && tasksByTeam[tKey]) {
         let isPastDue = false;
         if (p.deadlineRaw) {
           const dDate = new Date(p.deadlineRaw);
           if (today >= dDate) isPastDue = true;
         }
         
-        tasksByTeam[p.team].push(`- ${name} (${p.service})\n  Deadline: ${p.deadlineRaw ? fmtDate(p.deadlineRaw) : 'TBD'}${isPastDue ? ' [PAST DUE ⚠️]' : ''}`);
+        tasksByTeam[tKey].push(`- ${name} (${p.service})\n  Deadline: ${p.deadlineRaw ? fmtDate(p.deadlineRaw) : 'TBD'}${isPastDue ? ' [PAST DUE ⚠️]' : ''}`);
         hasPending = true;
       }
     });

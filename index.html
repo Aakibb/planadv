@@ -660,7 +660,8 @@ function getPitchesForUser(ci) {
   const isManager = isAdmin || (currentUser && currentUser.toLowerCase() === 'tutul');
   if (isManager) return pitches[ci];
   if (!currentUser) return [];
-  return pitches[ci].filter(p => p.team && p.team.toLowerCase() === currentUser.toLowerCase());
+  const curLower = currentUser.toLowerCase();
+  return pitches[ci].filter(p => p.team && p.team.toLowerCase() === curLower);
 }
 
 // ── USER REGISTRY ── all users with pre-assigned emails and roles
@@ -831,7 +832,8 @@ function renderPlanning(){
     // Member visibility filtering
     let userPitches = pitches[ci];
     if (!isManager && currentUser) {
-      userPitches = pitches[ci].filter(p => p.team && p.team.toLowerCase() === currentUser.toLowerCase());
+      const curLower = currentUser.toLowerCase();
+      userPitches = pitches[ci].filter(p => p.team && p.team.toLowerCase() === curLower);
       if (userPitches.length === 0) return; // Hide row if no tasks for this user
     }
     
@@ -1280,10 +1282,14 @@ function renderTasks() {
       
       // Visibility Logic: 
       // Members only see their own. Managers (Akib/Tutul) see according to filter.
+      const tLower = teamName.toLowerCase();
+      const cLower = currentUser ? currentUser.toLowerCase() : '';
       if (!isManager) {
-        if (teamName.toLowerCase() !== currentUser.toLowerCase()) return;
+        if (tLower !== cLower) return;
       } else {
-        if (filter !== 'All' && filter !== 'Unassigned' && teamName !== filter) return;
+        if (filter !== 'All' && filter !== 'Unassigned') {
+          if (tLower !== filter.toLowerCase()) return;
+        }
         if (filter === 'Unassigned' && teamName !== 'Unassigned') return;
       }
       
@@ -1427,7 +1433,8 @@ function renderCalendar(){
   // Filter pitches for counting if not manager
   const getFilteredPitches = (ci) => {
     if (isManager) return pitches[ci];
-    return pitches[ci].filter(p => p.team && p.team.toLowerCase() === currentUser.toLowerCase());
+    const curLower = currentUser ? currentUser.toLowerCase() : '';
+    return pitches[ci].filter(p => p.team && p.team.toLowerCase() === curLower);
   };
 
   const monCounts=MONTHS.map(mon=>
@@ -1542,7 +1549,8 @@ function renderSummary() {
 
       // Chart data collection
       const t = p.team || 'Unassigned';
-      if(teamLoad[t] !== undefined) teamLoad[t]++;
+      const tLower = t.charAt(0).toUpperCase() + t.slice(1).toLowerCase(); // Normalize to capitalized
+      if(teamLoad[tLower] !== undefined) teamLoad[tLower]++;
       else teamLoad['Unassigned']++;
       
       if(svcMix[p.service] !== undefined) svcMix[p.service]++;
